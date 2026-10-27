@@ -724,7 +724,7 @@ footer .wrap{display:grid;gap:36px}
     var btn = document.getElementById('sendBtn');
     sent.hidden = false; sent.className = 'sent wait'; sent.textContent = 'Enviando tu consulta…'; btn.disabled = true;
     {
-      fetch('https://formsubmit.co/ajax/domopoint.uy@gmail.com', {method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'},
+      fetch('https://formsubmit.co/ajax/34fc040f306ba5a4fb962161d9a69', {method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'},
         body: JSON.stringify({_subject:'Nueva consulta Domo Point: ' + val('tipo'), _template:'table', _captcha:'false', Nombre:nombre || '-', Contacto:contacto, 'Tipo de evento':val('tipo'), Invitados:val('inv'), Horario:val('hora'), Servicio:val('serv'), Extras:extras() || '-', Fecha:fmtDate(form.fecha.value), Mensaje:extra || '-'})})
         .then(function(r){ return r.json(); })
         .then(function(j){ if (j && (j.success === 'true' || j.success === true)) { sent.className = 'sent'; sent.textContent = '¡Listo! Tu consulta nos llegó. Te respondemos a la brevedad.'; } else { throw 0; } })
