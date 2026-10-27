@@ -255,6 +255,8 @@ legend,label.lab{font-weight:700;font-size:15px;padding:0;margin-bottom:10px}
 .cal-note b{color:var(--violet)}
 .result{display:grid;gap:12px;padding:18px;border-radius:16px;background:var(--violet-soft)}
 .sent{margin:0;font-weight:700;font-size:16px;color:#15602f;background:#e5f6ea;padding:12px 14px;border-radius:12px}
+.sent.wait{color:var(--mute);background:var(--bg)}
+.sent.err{color:#9a2f12;background:#ffe9e1}
 .need{font-size:14px;color:#b4381a;font-weight:600}
 .result pre{margin:0;white-space:pre-wrap;font-family:var(--f-body);font-size:15px;line-height:1.5}
 .result .acts{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
@@ -544,16 +546,16 @@ footer .wrap{display:grid;gap:36px}
           <div class="field"><label for="contacto">Tu WhatsApp o mail</label><input type="text" id="contacto" name="contacto" autocomplete="email" placeholder="Para responderte"></div>
         </div>
         <div class="field"><label for="msg">Algo más que quieras contarnos</label><textarea id="msg" name="msg" placeholder="Opcional"></textarea></div>
-        <div><button class="btn btn-v" type="submit">Armar mi consulta <span class="arr">→</span></button></div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px"><button class="btn btn-v" type="submit" id="sendBtn">Enviar consulta <span class="arr">→</span></button><span class="need" id="needMsg" hidden>Dejanos tu WhatsApp o mail para poder responderte.</span></div>
         <div class="result" id="result" hidden aria-live="polite">
           <p class="sent" id="sentMsg" hidden></p>
           <pre id="resultText"></pre>
           <div class="acts">
             <a class="btn btn-wa" id="waBtn" href="#" target="_blank" rel="noopener">Enviar por WhatsApp</a>
-            <a class="btn btn-v" id="mailBtn" href="#">Enviar por mail</a>
+            <a class="btn btn-v" id="mailBtn" href="#" target="_blank" rel="noopener">Abrir en Gmail</a>
             <button class="btn btn-line" type="button" id="copyMsg">Copiar mensaje</button>
           </div>
-          <span class="note" id="resNote">Si ninguno de los botones abre tu app, copiá el mensaje y mandalo al 094 244 199 o a domopoint.uy@gmail.com</span>
+          <span class="note" id="resNote">¿Preferís escribirnos directo? Usá WhatsApp o Gmail con el mensaje ya armado, o copialo y mandalo al 094 244 199 o a domopoint.uy@gmail.com</span>
         </div>
       </form>
     </div>
@@ -705,6 +707,9 @@ footer .wrap{display:grid;gap:36px}
   form.addEventListener('submit', function(e){
     e.preventDefault();
     var nombre = form.nombre.value.trim(), extra = form.msg.value.trim();
+    var need = document.getElementById('needMsg');
+    if (!form.contacto.value.trim()) { need.hidden = false; form.contacto.focus(); return; }
+    need.hidden = true;
     var txt = 'Hola Domo Point' + (nombre ? ', soy ' + nombre : '') + '. Quiero consultar disponibilidad:\n\n' +
       'Tipo de evento: ' + val('tipo') + '\n' +
       'Invitados: ' + val('inv') + '\n' +
@@ -714,15 +719,17 @@ footer .wrap{display:grid;gap:36px}
       'Fecha tentativa: ' + fmtDate(form.fecha.value) + (extra ? '\n\n' + extra : '') + '\n\nGracias.';
     out.textContent = txt;
     document.getElementById('waBtn').href = 'https://wa.me/' + WA + '?text=' + encodeURIComponent(txt);
-    mailBtn.href = 'mailto:domopoint.uy@gmail.com?subject=' + encodeURIComponent('Consulta de fecha: ' + val('tipo')) + '&body=' + encodeURIComponent(txt);
+    mailBtn.href = 'https://mail.google.com/mail/?view=cm&fs=1&to=domopoint.uy@gmail.com&su=' + encodeURIComponent('Consulta de fecha: ' + val('tipo')) + '&body=' + encodeURIComponent(txt);
     var sent = document.getElementById('sentMsg'), contacto = form.contacto.value.trim();
-    sent.hidden = true;
-    if (contacto) {
+    var btn = document.getElementById('sendBtn');
+    sent.hidden = false; sent.className = 'sent wait'; sent.textContent = 'Enviando tu consulta…'; btn.disabled = true;
+    {
       fetch('https://formsubmit.co/ajax/domopoint.uy@gmail.com', {method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'},
         body: JSON.stringify({_subject:'Nueva consulta Domo Point: ' + val('tipo'), _template:'table', _captcha:'false', Nombre:nombre || '-', Contacto:contacto, 'Tipo de evento':val('tipo'), Invitados:val('inv'), Horario:val('hora'), Servicio:val('serv'), Extras:extras() || '-', Fecha:fmtDate(form.fecha.value), Mensaje:extra || '-'})})
         .then(function(r){ return r.json(); })
-        .then(function(j){ if (j && (j.success === 'true' || j.success === true)) { sent.textContent = '¡Listo! Tu consulta nos llegó. Te respondemos a la brevedad.'; sent.hidden = false; } })
-        .catch(function(){});
+        .then(function(j){ if (j && (j.success === 'true' || j.success === true)) { sent.className = 'sent'; sent.textContent = '¡Listo! Tu consulta nos llegó. Te respondemos a la brevedad.'; } else { throw 0; } })
+        .catch(function(){ sent.className = 'sent err'; sent.textContent = 'No pudimos enviarla desde acá. Mandala por WhatsApp o Gmail con los botones de abajo.'; })
+        .then(function(){ btn.disabled = false; });
     }
     res.hidden = false;
     res.scrollIntoView({block: 'nearest', behavior: reduce ? 'auto' : 'smooth'});
