@@ -661,7 +661,10 @@ footer .wrap{display:grid;gap:36px}
   // Calendario de fechas (desde 20 días en adelante, hasta un año)
   var MIN_DIAS = 20, FIN = new Date(); FIN.setHours(0,0,0,0); FIN.setFullYear(FIN.getFullYear() + 1);
   // Fechas ya reservadas (formato AAAA-MM-DD). Agregar o sacar fechas acá.
-  var OCUPADAS = [];
+  var OCUPADAS = ['2026-11-06','2026-11-07','2026-11-21','2026-12-04','2026-12-11','2026-12-18','2026-12-19'];
+  // Meses enteros reservados (0 = enero, 1 = febrero)
+  var MESES_OCUPADOS = [0, 1];
+  function ocupada(f){ return OCUPADAS.indexOf(iso(f)) > -1 || MESES_OCUPADOS.indexOf(f.getMonth()) > -1; }
   var hoy = new Date(); hoy.setHours(0,0,0,0);
   var desde = new Date(hoy); desde.setDate(desde.getDate() + MIN_DIAS);
   var meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -681,13 +684,12 @@ footer .wrap{display:grid;gap:36px}
     var n = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
     for (var d = 1; d <= n; d++) {
       var f = new Date(cur.getFullYear(), cur.getMonth(), d), el;
-      if (f < desde || f > FIN) { el = document.createElement('span'); el.className = 'off'; el.textContent = d; }
-      else if (OCUPADAS.indexOf(iso(f)) > -1) { el = document.createElement('span'); el.className = 'busy'; el.textContent = d; el.title = 'Fecha reservada'; el.setAttribute('aria-label', d + ' de ' + meses[f.getMonth()] + ', reservada'); }
+      if (f >= hoy && f <= FIN && ocupada(f)) { el = document.createElement('span'); el.className = 'busy'; el.textContent = d; el.title = 'Fecha reservada'; el.setAttribute('aria-label', d + ' de ' + meses[f.getMonth()] + ', reservada'); }
+      else if (f < desde || f > FIN) { el = document.createElement('span'); el.className = 'off'; el.textContent = d; }
       else {
         el = document.createElement('button'); el.type = 'button'; el.textContent = d; el.dataset.d = iso(f);
         el.setAttribute('aria-label', dias[f.getDay()] + ' ' + d + ' de ' + meses[f.getMonth()]);
         el.setAttribute('aria-pressed', hidden.value === el.dataset.d);
-        if (f.getDay() === 5 || f.getDay() === 6) el.classList.add('wkd');
         el.addEventListener('click', function(){
           hidden.value = this.dataset.d;
           grid.querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.d === hidden.value); });
